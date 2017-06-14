@@ -21,8 +21,8 @@ To run the web server::
 
     ./manage.py runserver
 
-To send a message, browse to any of the following:
+To send a message, browse to any of the following.
 
-    http://localhost:9000/send-message/
-    http://localhost:9000/send-message-pools/
-    http://localhost:9000/run-task/
+http://localhost:9000/send-message/
+http://localhost:9000/send-message-pools/
+http://localhost:9000/run-task/
