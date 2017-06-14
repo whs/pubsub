@@ -1,17 +1,11 @@
 import logging
 import os
-import sys
 
-from django.conf import settings
 from kombu import Connection, Exchange, Queue
 from kombu.mixins import ConsumerMixin
 
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pubsub.settings')
-
-# The JSON file comes from Google and has the credentials. The Google api
-# likes to use the ENV variable
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/Users/bglass/src/bglass-sandbox/develop-b3efa4ff17aa.json'
 
 MESSAGE_PREFETCH_COUNT = 1
 

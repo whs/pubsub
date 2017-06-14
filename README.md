@@ -13,6 +13,10 @@ To install:
     . ve/bin/activate
     pip install -r requirements.txt
 
+To authenticate with Google, acquire a GCE credentials json file and store it
+locally. Change the GOOGLE_APPLICATION_CREDENTIALS value in
+[settings.py](pubsub/settings.py).
+
 To run the consumer:
 
     python pubsub/consumer.py
