@@ -21,4 +21,6 @@ from messaging import views
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^send-message/', views.send_message),
+    url(r'^send-message-pools/', views.send_message),
+    url(r'^run-task/', views.run_task),
 ]

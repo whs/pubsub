@@ -2,24 +2,41 @@ import os
 
 from django.shortcuts import render
 
-from kombu import Connection, transport
+from kombu import Connection, Exchange, pools
 
-#transport.DEFAULT_TRANSPORT = 'pubsub.kombu_transport:Transport'
+from .tasks import flubber_dubber
+
+TRANSPORT = 'pubsub.kombu_transport:Transport'
 
 # The JSON file comes from Google and has the credentials. The Google api
 # likes to use the ENV variable
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/Users/bglass/src/bglass-sandbox/develop-b3efa4ff17aa.json'
 
+# This view tess the simplest approach to sending a message
 def send_message(request):
-    with Connection(transport='pubsub.kombu_transport:Transport') as connection:
-        producer = connection.Producer()
+    foobar_exchange = Exchange('foobar-exchange', type='topic')
+    with Connection(transport=TRANSPORT) as connection:
+        producer = connection.Producer(exchange=foobar_exchange)
+        #producer = connection.Producer()
         payload = {'foo': 'bar'}
-        topic = 'test-topic'
-        producer.publish(
-            payload,
-            routing_key=topic,
-            #headers=headers,
-            #serializer=serializer,
-            #**kwargs
-        )
+        topic = 'foobar2'
+        producer.publish(payload, routing_key=topic)
         return render(request, 'send_message.html')
+
+# Here we use Kombu pools to makes sure the transport will work in the context
+# of the message sending machinery we use internally.
+connection = Connection(transport=TRANSPORT)
+connection_pool = connection.Pool(limit=100)
+producer_pool = pools.ProducerPool(connection_pool, limit=100)
+
+def send_message_pools(request):
+    with producer_pool.acquire() as producer:
+        payload = {'foo': 'bar'}
+        topic = 'foobar2'
+        producer.publish(payload, routing_key=topic)
+        return render(request, 'send_message.html')
+
+# Let's see if we can get a celery task to work.
+def run_task(request):
+    flubber_dubber.delay('This is a test.')
+    return render(request, 'send_message.html')

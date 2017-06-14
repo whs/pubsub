@@ -120,3 +120,31 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+
+LOGGING = {
+    'version': 1,
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            #'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django': {
+            'propagate': True,
+        },
+        'pubsub': {
+            'propagate': True,
+        },
+    },
+}
+
+# Celery
+CELERY_BROKER_TRANSPORT = 'pubsub.kombu_transport:Transport'
+CELERY_CREATE_MISSING_QUEUES = True
