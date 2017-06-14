@@ -20,6 +20,10 @@ To run the consumer:
 
     python pubsub/consumer.py
 
+To run a celery worker:
+
+    celery -A pubsub worker -l debug    
+
 To run the web server:
 
     ./manage.py runserver
