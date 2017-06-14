@@ -2,8 +2,7 @@
 Prototype Kombu transport for Google pubsub
 -------------------------------------------
 
-This is a simple Django prototype project with a Kombu consumer.  
-The key piece is the Kombu transport in
+This is a simple Django prototype project with a Kombu consumer. The key piece is the Kombu transport in
 [kombu_transport.py](pubsub/kombu_transport.py). There are a few views that
 send messages in one way or another. There is also a consumer that pulls those messages.
 
