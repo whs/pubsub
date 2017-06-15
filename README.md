@@ -12,10 +12,10 @@ To install:
     . ve/bin/activate
     pip install -r requirements.txt
 
-Copy pubsub/local_settings.py.example to pubsub/local_settings.py and edit the values appropriately.
+Copy [pubsub/local_settings.py.example](pubsub/local_settings.py.example) to pubsub/local_settings.py and edit the values appropriately.
 To authenticate with Google, acquire a GCE credentials json file and store it
 locally. Change the GOOGLE_APPLICATION_CREDENTIALS value in
-[local_settings.py](pubsub/local_settings.py). Also create an obscure secret for the local_settings.py.
+local_settings.py. Also create an obscure secret for the local_settings.py.
 
 To run the consumer:
 
