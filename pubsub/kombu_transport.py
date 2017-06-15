@@ -133,11 +133,11 @@ class Channel(virtual.Channel):
     def _poll(self, cycle, callback, timeout=None):
         """Poll a list of queues for available messages."""
         log.debug('Running _poll')
-        return super(Transport, self)._poll(cycle, callback, timeout=timeout)
+        return super(Channel, self)._poll(cycle, callback, timeout=timeout)
 
     def drain_events(self, timeout=None, callback=None):
         log.debug('Running drain_events')
-        return super(Transport, self).drain_events(timeout=timeout, callback=callback)
+        return super(Channel, self).drain_events(timeout=timeout, callback=callback)
 
     def close(self):
         log.debug('Closing Pubsub channel.')

@@ -1,6 +1,6 @@
 # pubsub
-Prototype Kombu transport for Google pubsub
--------------------------------------------
+Prototype Kombu transport for Google Cloud Pub/Sub
+--------------------------------------------------
 
 This is a simple Django prototype project with a Kombu consumer. The key piece is the Kombu transport in
 [kombu_transport.py](pubsub/kombu_transport.py). There are a few views that
@@ -12,9 +12,10 @@ To install:
     . ve/bin/activate
     pip install -r requirements.txt
 
+Copy pubsub/local_settings.py.example to pubsub/local_settings.py and edit the values appropriately.
 To authenticate with Google, acquire a GCE credentials json file and store it
 locally. Change the GOOGLE_APPLICATION_CREDENTIALS value in
-[settings.py](pubsub/settings.py).
+[local_settings.py](pubsub/local_settings.py). Also create an obscure secret for the local_settings.py.
 
 To run the consumer:
 

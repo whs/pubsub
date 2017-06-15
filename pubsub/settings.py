@@ -15,7 +15,6 @@ import os
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
@@ -26,9 +25,6 @@ SECRET_KEY = 'hh9xuvm3ryr&&f&sg@x)iw87=s0f6u5-v$755!xkuw(e2(r!80'
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
-# Set the GCE Credentials
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/Users/bglass/src/bglass-sandbox/develop-b3efa4ff17aa.json'
 
 # Application definition
 
@@ -153,3 +149,8 @@ LOGGING = {
 CELERY_BROKER_TRANSPORT = 'pubsub.kombu_transport:Transport'
 CELERY_CREATE_MISSING_QUEUES = True
 CELERY_TASK_DEFAULT_QUEUE = 'pubsub-celery'
+
+try:
+    from .local_settings import *
+except ImportError:
+    pass

@@ -14,7 +14,7 @@ exchange = Exchange('foobar-exchange', type='topic')
 log = logging.getLogger(__name__)
 
 
-class UsageConsumer(ConsumerMixin):
+class MessageConsumer(ConsumerMixin):
     queue = Queue('test-queue-2', exchange=exchange, routing_key='foobar2')
 
     def __init__(self, connection):
@@ -36,4 +36,4 @@ class UsageConsumer(ConsumerMixin):
 
 if __name__ == '__main__':
     with Connection(transport='kombu_transport:Transport') as connection:
-        UsageConsumer(connection).run()
+        MessageConsumer(connection).run()
