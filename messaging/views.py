@@ -2,7 +2,7 @@ from django.shortcuts import render
 
 from kombu import Connection, Exchange, pools
 
-from .tasks import flubber_dubber
+from .tasks import say_something
 
 TRANSPORT = 'pubsub.kombu_transport:Transport'
 
@@ -32,5 +32,5 @@ def send_message_pools(request):
 
 # Let's see if we can get a celery task to work.
 def run_task(request):
-    flubber_dubber.delay('This is a test.')
+    say_something.delay('This is a test.')
     return render(request, 'send_message.html')

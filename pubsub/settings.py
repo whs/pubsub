@@ -129,7 +129,6 @@ LOGGING = {
         'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
-            #'formatter': 'simple',
         },
     },
     'loggers': {
@@ -144,9 +143,13 @@ LOGGING = {
         'pubsub': {
             'propagate': True,
         },
+        'messaging': {
+            'propagate': True,
+        },
     },
 }
 
 # Celery
 CELERY_BROKER_TRANSPORT = 'pubsub.kombu_transport:Transport'
 CELERY_CREATE_MISSING_QUEUES = True
+CELERY_TASK_DEFAULT_QUEUE = 'pubsub-celery'

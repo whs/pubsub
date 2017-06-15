@@ -11,24 +11,18 @@ from kombu.transport import base, virtual
 
 from google.cloud import pubsub
 
-# The JSON file comes from Google and has the credentials. The Google api
-# likes to use the ENV variable
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/Users/bglass/src/bglass-sandbox/develop-b3efa4ff17aa.json'
+## The JSON file comes from Google and has the credentials. The Google api
+## likes to use the ENV variable
+#os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/Users/bglass/src/bglass-sandbox/develop-b3efa4ff17aa.json'
 
 log = logging.getLogger(__name__)
 
 
 class Channel(virtual.Channel):
-    """In-memory Channel."""
+    """Google Pub/Sub Channel."""
 
     do_restore = False
     supports_fanout = False
-
-    implements = base.Transport.implements.extend(
-        async=True,
-        exchange_type=frozenset(['topic']),
-        heartbeats=False,
-    )
 
     def __init__(self, *args, **kwargs):
         super(Channel, self).__init__(*args, **kwargs)
@@ -118,9 +112,6 @@ class Channel(virtual.Channel):
             if topic.exists():
                 yield topic.name
 
-    def _size(self, queue):
-        None
-
     def _delete(self, queue, *args, **kwargs):
         log.debug('deleting queue.')
         self._get_queue(queue).delete()
@@ -138,6 +129,15 @@ class Channel(virtual.Channel):
         # pubsub doesn't have a way to find out how big the queue is, so we
         # return 0
         return 0
+
+    def _poll(self, cycle, callback, timeout=None):
+        """Poll a list of queues for available messages."""
+        log.debug('Running _poll')
+        return super(Transport, self)._poll(cycle, callback, timeout=timeout)
+
+    def drain_events(self, timeout=None, callback=None):
+        log.debug('Running drain_events')
+        return super(Transport, self).drain_events(timeout=timeout, callback=callback)
 
     def close(self):
         log.debug('Closing Pubsub channel.')
@@ -157,7 +157,6 @@ class Transport(virtual.Transport):
 
     Channel = Channel
 
-    #: memory backend state is global.
     state = virtual.BrokerState()
 
     implements = virtual.Transport.implements.extend(
