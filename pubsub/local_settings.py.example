@@ -1,0 +1,7 @@
+import os
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = 'put your secret key here'
+
+# Set the GCE Credentials
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'the path to your .json credentials file'
