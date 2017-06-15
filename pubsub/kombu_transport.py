@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 class Channel(virtual.Channel):
-    """Google Pub/Sub Channel."""
+    """Google Cloud Pub/Sub Channel."""
 
     do_restore = False
     supports_fanout = False
@@ -153,7 +153,7 @@ class Channel(virtual.Channel):
 
 
 class Transport(virtual.Transport):
-    """In-memory Transport."""
+    """Google Cloud Pub/Sub Transport."""
 
     Channel = Channel
 
