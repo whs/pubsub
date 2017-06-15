@@ -32,3 +32,5 @@ To send a message, browse to any of the following:
 * http://localhost:8000/send-message/
 * http://localhost:8000/send-message-pools/
 * http://localhost:8000/run-task/
+
+Celery tasks are currently not working.
