@@ -4,16 +4,11 @@ from __future__ import absolute_import, unicode_literals
 import fnmatch
 import logging
 import json
-import os
 
 from kombu.five import Empty
-from kombu.transport import base, virtual
+from kombu.transport import virtual
 
 from google.cloud import pubsub
-
-## The JSON file comes from Google and has the credentials. The Google api
-## likes to use the ENV variable
-#os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/Users/bglass/src/bglass-sandbox/develop-b3efa4ff17aa.json'
 
 log = logging.getLogger(__name__)
 
@@ -28,6 +23,27 @@ class Channel(virtual.Channel):
         super(Channel, self).__init__(*args, **kwargs)
         self._broker = pubsub.Client()
         log.debug('Pubsub channel created.')
+
+    def basic_consume(self, queue, no_ack, callback, consumer_tag, **kwargs):
+        log.debug('Calling basic_consume: %s, %s, %s %s.', queue, no_ack, callback, consumer_tag)
+
+        #super(Channel, self).basic_consume(queue, no_ack, callback, consumer_tag, **kwargs)
+
+        self._tag_to_queue[consumer_tag] = queue
+        self._active_queues.append(queue)
+
+        def _callback(raw_message):
+            log.debug('Calling _callback.')
+            message = self.Message(raw_message, channel=self)
+            if not no_ack:
+                self.qos.append(message, message.delivery_tag)
+            return callback(message)
+
+        self.connection._callbacks[queue] = _callback
+        self._consumers.add(consumer_tag)
+
+        self._reset_cycle()
+        log.debug('Finished calling basic_consume.')
 
     def _get_queue(self, queue):
         # pubsub doesn't allow multiple bindings, so we grab the first one.
@@ -58,10 +74,11 @@ class Channel(virtual.Channel):
             log.info('Created queue (Google Pubsub subscription): "%s".', q.name)
 
     def _get(self, queue, timeout=None):
+        # This should perform a non-blocking pull from the queue.
         log.debug('Pulling from queue.')
 
         q = self._get_queue(queue)
-        results = q.pull()
+        results = q.pull(return_immediately=True)
         if not results:
             raise Empty()
 
@@ -70,7 +87,7 @@ class Channel(virtual.Channel):
         serialized_payload = message.data.decode('utf-8')
         payload = json.loads(serialized_payload)
 
-        # Cache the ack_id and queue
+        # Remember the ack_id and queue
         payload['properties']['delivery_info'].update({
             'ack_id': ack_id,
             'queue': queue,
@@ -98,7 +115,7 @@ class Channel(virtual.Channel):
         log.debug('Message was published to topic: "%s".', routing_key)
 
     def _lookup(self, exchange, routing_key):
-        log.debug('looking up queues bound to topic: "%s".', routing_key)
+        log.debug('looking up queues bound to topic: "%s" on exchange: "%s".', routing_key, exchange)
 
         if set('[*?') & set(routing_key):
             # This is a hack to provide wildcards
@@ -132,7 +149,7 @@ class Channel(virtual.Channel):
 
     def _poll(self, cycle, callback, timeout=None):
         """Poll a list of queues for available messages."""
-        log.debug('Running _poll')
+        log.debug('*********************Running _poll*********************')
         return super(Channel, self)._poll(cycle, callback, timeout=timeout)
 
     def drain_events(self, timeout=None, callback=None):
@@ -144,7 +161,7 @@ class Channel(virtual.Channel):
 
         super(Channel, self).close()
 
-        # The pubsub client doesn't have way to explicitly
+        # The pubsub client doesn't have a way to explicitly
         # close(). We'll just hope Python cleans it up.
         delattr(self, '_broker')
 
@@ -184,3 +201,11 @@ class Transport(virtual.Transport):
         # (returned by ``create_channel``).
         self._avail_channels.append(self.create_channel(self))
         return self     # for drain events
+
+    def drain_events(self, connection, timeout=None):
+        log.debug('***************Running drain_events**************')
+        return super(Transport, self).drain_events(connection, timeout=timeout)
+
+    def _drain_channel(self, channel, callback, timeout=None):
+        log.debug('***************Running _drain_channel**************')
+        return super(Transport, self)._drain_channel(channel, callback, timeout=timeout)

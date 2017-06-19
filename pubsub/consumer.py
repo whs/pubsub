@@ -1,11 +1,9 @@
 import logging
-import os
 
 from kombu import Connection, Exchange, Queue
 from kombu.mixins import ConsumerMixin
 
-# set the default Django settings module for the 'celery' program.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pubsub.settings')
+import local_settings
 
 MESSAGE_PREFETCH_COUNT = 1
 
@@ -27,6 +25,7 @@ class MessageConsumer(ConsumerMixin):
         return [consumer]
 
     def handle_message(self, body, message):
+        log.debug('Received message "%s".', body)
         print(body)
         message.ack()
         #self.should_stop = True

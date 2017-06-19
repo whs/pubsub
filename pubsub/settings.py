@@ -142,6 +142,9 @@ LOGGING = {
         'messaging': {
             'propagate': True,
         },
+        'celery': {
+            'propagate': True,
+        },
     },
 }
 
@@ -149,6 +152,7 @@ LOGGING = {
 CELERY_BROKER_TRANSPORT = 'pubsub.kombu_transport:Transport'
 CELERY_CREATE_MISSING_QUEUES = True
 CELERY_TASK_DEFAULT_QUEUE = 'pubsub-celery'
+CELERY_EVENT_QUEUE_PREFIX = 'pubsub-test'
 
 try:
     from .local_settings import *
