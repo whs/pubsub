@@ -3,6 +3,7 @@ import logging
 from kombu import Connection, Exchange, Queue
 from kombu.mixins import ConsumerMixin
 
+# This is required to get the GCE credentials
 import local_settings
 
 MESSAGE_PREFETCH_COUNT = 1
