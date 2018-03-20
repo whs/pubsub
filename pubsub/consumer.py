@@ -27,7 +27,9 @@ class MessageConsumer(ConsumerMixin):
 
     def handle_message(self, body, message):
         log.debug('Received message "%s".', body)
+        print()
         print(body)
+        print()
         message.ack()
         #self.should_stop = True
         #bound_queue = self.queue(self.connection)
@@ -35,5 +37,9 @@ class MessageConsumer(ConsumerMixin):
 
 
 if __name__ == '__main__':
-    with Connection(transport='kombu_transport:Transport') as connection:
+    #from kombu.utils.debug import setup_logging
+    #setup_logging(loglevel='DEBUG', loggers=[''])
+
+    options = {'project_id': local_settings.PROJECT_ID}
+    with Connection(transport='kombu_transport:Transport', transport_options=options) as connection:
         MessageConsumer(connection).run()

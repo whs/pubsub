@@ -1,4 +1,4 @@
 django==1.11.2
 celery==4.1.0
 #google-cloud==0.25.0
-google-cloud-pubsub==0.28.3
+google-cloud-pubsub==0.32.1
