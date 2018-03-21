@@ -36,7 +36,7 @@ class Channel(virtual.Channel):
         self._queues = {}
 
     def basic_consume(self, queue, no_ack, callback, consumer_tag, **kwargs):
-        """Consume from `queue`."""
+        """Consume asynchronously from `queue`."""
 
         def _callback(raw_message):
             serialized_payload = raw_message.data.decode('utf-8')
@@ -132,7 +132,7 @@ class Channel(virtual.Channel):
         serialized_payload = raw_message.data.decode('utf-8')
         payload = json.loads(serialized_payload)
 
-        # Remember the ack_id and queue
+        # Remember the raw message so we an ack() it later
         payload['properties']['delivery_info'].update({
             'raw_message': raw_message,
         })
