@@ -6,7 +6,7 @@ from kombu.mixins import ConsumerMixin
 # This is required to get the GCE credentials
 import local_settings
 
-MESSAGE_PREFETCH_COUNT = 1
+MESSAGE_PREFETCH_COUNT = 10
 
 exchange = Exchange('foobar-exchange', type='topic')
 
@@ -37,8 +37,8 @@ class MessageConsumer(ConsumerMixin):
 
 
 if __name__ == '__main__':
-    #from kombu.utils.debug import setup_logging
-    #setup_logging(loglevel='DEBUG', loggers=[''])
+    from kombu.utils.debug import setup_logging
+    setup_logging(loglevel='DEBUG', loggers=[''])
 
     options = {'project_id': local_settings.PROJECT_ID}
     with Connection(transport='kombu_transport:Transport', transport_options=options) as connection:
