@@ -115,7 +115,6 @@ class Channel(virtual.Channel):
         def callback(message):
             q.put(message)
 
-        q = self._get_queue(queue_name)
         subscription_path = self.subscriber.subscription_path(self.google_project_id, queue_name)
         if subscription_path in self._queues:
             q = self._queues[subscription_path]
@@ -196,7 +195,7 @@ class Transport(virtual.Transport):
 
     implements = virtual.Transport.implements.extend(
         async=True,
-        exchange_type=frozenset(['topic']),
+        exchange_type=frozenset(['direct']),
         heartbeats=False,
     )
 
