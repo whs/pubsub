@@ -23,7 +23,7 @@ To run the consumer:
 
 To run a celery worker:
 
-    celery -A pubsub worker -l debug --without-heartbeat
+    celery -A pubsub worker -l debug
 
 To run the web server:
 

@@ -21,19 +21,16 @@ class MessageConsumer(ConsumerMixin):
 
     def get_consumers(self, Consumer, channel):
         consumer = Consumer([self.queue], callbacks=[self.handle_message], accept=['json'])
-
-        consumer.qos(prefetch_count=MESSAGE_PREFETCH_COUNT)
         return [consumer]
 
     def handle_message(self, body, message):
-        log.debug('Received message "%s".', body)
-        print()
-        print(body)
-        print()
+        log.debug('\nReceived message "%s".\n', body)
         message.ack()
-        #self.should_stop = True
-        #bound_queue = self.queue(self.connection)
-        #bound_queue.delete()
+
+        # Test deleting the queue
+        # self.should_stop = True
+        # bound_queue = self.queue(self.connection)
+        # bound_queue.delete()
 
 
 if __name__ == '__main__':

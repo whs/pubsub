@@ -79,7 +79,9 @@ class Channel(virtual.Channel):
     def _delete(self, queue_name, *args, **kwargs):
         subscription_path = self.subscriber.subscription_path(self.google_project_id, queue_name)
         try:
-            del self._queues[subscription_path]
+            if subscription_path in self._queues:
+                del self._queues[subscription_path]
+
             self.subscriber.delete_subscription(subscription_path)
         except Exception:
             log.exception('Error deleting queue %s', queue_name)

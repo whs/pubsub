@@ -167,8 +167,6 @@ except ImportError:
     pass
 
 # Celery
-from kombu import Queue, Exchange
-
 CELERY_BROKER_TRANSPORT = 'pubsub.kombu_transport:Transport'
 CELERY_BROKER_TRANSPORT_OPTIONS = {'project_id': PROJECT_ID}
 CELERY_TASK_CREATE_MISSING_QUEUES = True
@@ -176,16 +174,3 @@ CELERY_TASK_DEFAULT_QUEUE = 'pubsub-celery-queue'
 CELERY_TASK_DEFAULT_EXCHANGE_TYPE = 'topic'
 CELERY_TASK_DEFAULT_EXCHANGE = 'pubsub-celery'
 CELERY_TASK_DEFAULT_ROUTING_KEY = 'pubsub-celery'
-CELERY_EVENT_QUEUE_PREFIX = 'pubsub-celeryev'
-CELERY_WORKER_SEND_TASK_EVENTS = False
-CELERY_SEND_EVENTS = False
-
-#default_queue = {'queue': 'pubsub-celery-queue', 'routing_key': 'pubsub-celery'}
-
-#CELERY_TASK_QUEUES = (
-#    Queue('pubsub-celery-queue', Exchange('pubsub-celery', type='topic'), routing_key='pubsub-celery'),
-#)
-
-#CELERY_TASK_ROUTES = {
-#    'messaging.tasks.say_something': default_queue,
-#}
