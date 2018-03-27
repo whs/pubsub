@@ -151,7 +151,7 @@ LOGGING = {
         'celery': {
             'handlers': ['console'],
             'level': 'DEBUG',
-            # 'propagate': True,
+            'propagate': True,
         },
         'kombu': {
             'handlers': ['console'],
@@ -174,3 +174,4 @@ CELERY_TASK_DEFAULT_QUEUE = 'pubsub-celery-queue'
 CELERY_TASK_DEFAULT_EXCHANGE_TYPE = 'topic'
 CELERY_TASK_DEFAULT_EXCHANGE = 'pubsub-celery'
 CELERY_TASK_DEFAULT_ROUTING_KEY = 'pubsub-celery'
+#CELERY_WORKER_HIJACK_ROOT_LOGGER = False

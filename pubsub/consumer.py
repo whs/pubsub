@@ -24,7 +24,7 @@ class MessageConsumer(ConsumerMixin):
         return [consumer]
 
     def handle_message(self, body, message):
-        log.debug('\nReceived message "%s".\n', body)
+        log.debug('\nReceived message "%s"; type: "%s".\n', body, type(body))
         message.ack()
 
         # Test deleting the queue

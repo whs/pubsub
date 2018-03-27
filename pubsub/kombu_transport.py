@@ -1,6 +1,7 @@
 """Google Cloud Pub/Sub."""
 from __future__ import absolute_import, unicode_literals
 
+import fnmatch
 import json
 import queue
 
@@ -35,8 +36,12 @@ class Channel(virtual.Channel):
         super(Channel, self).__init__(*args, **kwargs)
         self._queues = {}
 
+    '''
     def basic_consume(self, queue, no_ack, callback, consumer_tag, **kwargs):
         """Consume asynchronously from `queue`."""
+
+        # This approach sorta worked, but after digging through the code, I see
+        # I was doing this in a very wrong way.
 
         def _callback(raw_message):
             serialized_payload = raw_message.data.decode('utf-8')
@@ -45,86 +50,102 @@ class Channel(virtual.Channel):
 
             # Remember the ack_id and queue
             if not no_ack:
-                message.properties['delivery_info'].update({
+                payload.properties['delivery_info'].update({
                     'raw_message': raw_message,
                 })
                 self.qos.append(message, message.delivery_tag)
 
             return callback(message)
 
-        subscription_path = self.subscriber.subscription_path(self.google_project_id, queue)
-        self.subscriber.subscribe(subscription_path, callback=_callback)
+        subscription_path = self._subscriber.subscription_path(self._google_project_id, queue)
+        self._subscriber.subscribe(subscription_path, callback=_callback)
+    '''
 
-    @property
-    def google_project_id(self):
+    @cached_property
+    def _google_project_id(self):
         return self.connection.client.transport_options['project_id']
 
     @cached_property
-    def publisher(self):
+    def _publisher(self):
         return pubsub.PublisherClient()
 
     @cached_property
-    def subscriber(self):
+    def _subscriber(self):
         return pubsub.SubscriberClient()
 
     def _has_queue(self, queue_name, **kwargs):
-        subscription_path = self.subscriber.subscription_path(self.google_project_id, queue_name)
+        subscription_path = self._subscriber.subscription_path(self._google_project_id, queue_name)
         try:
-            self.subscriber.get_subscription(subscription_path)
+            self._subscriber.get_subscription(subscription_path)
         except exceptions.GoogleAPICallError:
             return False
         else:
             return True
 
     def _delete(self, queue_name, *args, **kwargs):
-        subscription_path = self.subscriber.subscription_path(self.google_project_id, queue_name)
+        topic_path = self._publisher.topic_path(self._google_project_id, queue_name)
+        subscription_path = self._subscriber.subscription_path(self._google_project_id, queue_name)
         try:
             if subscription_path in self._queues:
-                del self._queues[subscription_path]
+                del self._queues[queue_name]
 
-            self.subscriber.delete_subscription(subscription_path)
+            self._subscriber.delete_subscription(subscription_path)
+            self._publisher.delete_topic(topic_path)
         except Exception:
             log.exception('Error deleting queue %s', queue_name)
 
-    def queue_bind(self, queue, exchange, routing_key, **kwargs):
-        super(Channel, self).queue_bind(queue, exchange, routing_key, **kwargs)
-
-        topic_path = self.publisher.topic_path(self.google_project_id, routing_key)
+    def _new_queue(self, queue_name, **kwargs):
+        topic_path = self._publisher.topic_path(self._google_project_id, queue_name)
         try:
-            self.publisher.create_topic(topic_path)
+            self._publisher.create_topic(topic_path)
         except Exception:
             log.warn('Unable to create topic.')
 
-        subscription_path = self.subscriber.subscription_path(self.google_project_id, queue)
+        subscription_path = self._subscriber.subscription_path(self._google_project_id, queue_name)
         try:
-            self.subscriber.create_subscription(subscription_path, topic_path)
+            self._subscriber.create_subscription(subscription_path, topic_path)
+        except Exception:
+            log.warn('Unable to create subscription.')
+
+    '''
+    def queue_bind(self, queue, exchange, routing_key, **kwargs):
+        super(Channel, self).queue_bind(queue, exchange, routing_key, **kwargs)
+
+        topic_path = self._publisher.topic_path(self._google_project_id, routing_key)
+        try:
+            self._publisher.create_topic(topic_path)
+        except Exception:
+            log.warn('Unable to create topic.')
+
+        subscription_path = self._subscriber.subscription_path(self._google_project_id, queue)
+        try:
+            self._subscriber.create_subscription(subscription_path, topic_path)
         except Exception:
             log.warn('Unable to create subscription.')
 
     def queue_unbind(self, queue, exchange=None, routing_key='', arguments=None, **kwargs):
         super(Channel, self).queue_unbind(queue, exchange=exchange, routing_key=routing_key, arguments=arguments, **kwargs)
         self._delete(queue)
+    '''
 
     def _get(self, queue_name, timeout=None):
         # This method must perform a non-blocking pull from the queue.  In order to
         # make that happen, we create a python Queue and shove stuff into it
         # from inside the callback. Queue has a non-blocking 'get' method.
-        # Hopefully someone doesn't try to use basic_consume() and _get() at
-        # the same time...
-
-        def callback(message):
-            q.put(message)
-
-        subscription_path = self.subscriber.subscription_path(self.google_project_id, queue_name)
-        if subscription_path in self._queues:
-            q = self._queues[subscription_path]
+        if queue_name in self._queues:
+            q = self._queues[queue_name]
         else:
             q = queue.Queue(maxsize=MAX_QUEUE_SIZE)
-            self._queues[subscription_path] = q
-            self.subscriber.subscribe(subscription_path, callback=callback)
+
+            def _get_callback(message):
+                q.put(message)
+
+            self._queues[queue_name] = q
+            subscription_path = self._subscriber.subscription_path(self._google_project_id, queue_name)
+            self._subscriber.subscribe(subscription_path, callback=_get_callback)
 
         try:
-            raw_message = q.get(block=False)
+            raw_message = q.get(block=False, timeout=timeout)
         except queue.Empty:
             raise Empty
 
@@ -138,50 +159,53 @@ class Channel(virtual.Channel):
 
         return payload
 
-    def basic_ack(self, delivery_tag, multiple=False):
-        info = self.qos.get(delivery_tag).delivery_info
-
-        try:
-            message = info['raw_message']
-            message.ack()
-        except KeyError:
-            pass
-
-        super(Channel, self).basic_ack(delivery_tag)
-
     def _put(self, routing_key, message, **kwargs):
         payload = json.dumps(message).encode('utf-8')
-        topic_path = self.publisher.topic_path(self.google_project_id, routing_key)
-        self.publisher.publish(topic_path, payload)
+        topic_path = self._publisher.topic_path(self._google_project_id, routing_key)
+        self._publisher.publish(topic_path, payload)
+
+    def basic_ack(self, delivery_tag, multiple=False):
+        super(Channel, self).basic_ack(delivery_tag)
+
+        info = self.qos.get(delivery_tag).delivery_info
+        if 'raw_message' in info:
+            info['raw_message'].ack()
 
     def _size(self, queue):
         # Google doesn't provide a way to check the size or even emptiness of the
         # queue.  It seems best to always assume something is in the queue.
         return 1
 
+    '''
     def _lookup(self, exchange, routing_key):
         # This method needs to return a list of things that _put can be run on.
         # We can't _put directly to a queue, so we just return the routing key,
         # which directs the _put to the topic. We double check to make sure the
         # topic exists.
-        topic_path = self.publisher.topic_path(self.google_project_id, routing_key)
-        try:
-            self.publisher.get_topic(topic_path)
-        except exceptions.GoogleAPICallError:
-            raise StopIteration
+        if set('[*?') & set(routing_key):
+            for topic in self._publisher.list_topic(self._google_project_id):
+                if fnmatch.fnmatch(topic.name, routing_key):
+                    yield topic.name
         else:
-            yield routing_key
+            topic_path = self._publisher.topic_path(self._google_project_id, routing_key)
+            try:
+                self._publisher.get_topic(topic_path)
+            except exceptions.GoogleAPICallError:
+                raise StopIteration
+            else:
+                yield routing_key
+    '''
 
     def _purge(self, queue_name):
-        subscription_path = self.subscriber.subscription_path(self.google_project_id, queue_name)
-        subscription = self.subscriber.get_subscription(subscription_path)
+        subscription_path = self._subscriber.subscription_path(self._google_project_id, queue_name)
+        subscription = self._subscriber.get_subscription(subscription_path)
         topic_path = subscription.topic
 
         # Delete and recreate the queue. This seems like a bad idea, but Google
         # doesn't have a method for purging a subscription.
         self._delete(queue_name)
         try:
-            self.subscriber.create_subscription(subscription_path, topic_path)
+            self._subscriber.create_subscription(subscription_path, topic_path)
         except Exception:
             log.warn('Unable to create subscription.')
 
@@ -194,8 +218,8 @@ class Transport(virtual.Transport):
     state = virtual.BrokerState()
 
     implements = virtual.Transport.implements.extend(
-        async=True,
-        exchange_type=frozenset(['direct']),
+        async=False,
+        exchange_type=frozenset(['direct', 'topic']),
         heartbeats=False,
     )
 
@@ -204,3 +228,11 @@ class Transport(virtual.Transport):
 
     def driver_version(self):
         return '0.1'
+
+    # In order to support async, these two methods need to be implemented here.
+
+    def register_with_event_loop(self, connection, loop):
+        return super(Transport, self).register_with_event_loop(connection, loop)
+
+    def on_readable(self, connection, loop):
+        return super(Transport, self).on_readable(connection, loop)
