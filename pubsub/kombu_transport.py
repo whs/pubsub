@@ -57,7 +57,7 @@ class Channel(virtual.Channel):
 
             return callback(message)
 
-        subscription_path = self._subscriber.subscription_path(self._google_project_id, queue)
+        subscription_path = self.subscription_path(queue)
         self._subscriber.subscribe(subscription_path, callback=_callback)
     '''
 
@@ -73,8 +73,16 @@ class Channel(virtual.Channel):
     def _subscriber(self):
         return pubsub.SubscriberClient()
 
+    def topic_path(self, queue_name):
+        prefix = self.connection.client.transport_options.get('prefix', '')
+        return self._subscriber.topic_path(self._google_project_id, prefix + queue_name)
+
+    def subscription_path(self, queue_name):
+        prefix = self.connection.client.transport_options.get('prefix', '')
+        return self._subscriber.subscription_path(self._google_project_id, prefix + queue_name)
+
     def _has_queue(self, queue_name, **kwargs):
-        subscription_path = self._subscriber.subscription_path(self._google_project_id, queue_name)
+        subscription_path = self.subscription_path(queue_name)
         try:
             self._subscriber.get_subscription(subscription_path)
         except exceptions.GoogleAPICallError:
@@ -83,8 +91,8 @@ class Channel(virtual.Channel):
             return True
 
     def _delete(self, queue_name, *args, **kwargs):
-        topic_path = self._publisher.topic_path(self._google_project_id, queue_name)
-        subscription_path = self._subscriber.subscription_path(self._google_project_id, queue_name)
+        topic_path = self.topic_path(queue_name)
+        subscription_path = self.subscription_path(queue_name)
         try:
             if subscription_path in self._queues:
                 del self._queues[queue_name]
@@ -95,13 +103,13 @@ class Channel(virtual.Channel):
             log.exception('Error deleting queue %s', queue_name)
 
     def _new_queue(self, queue_name, **kwargs):
-        topic_path = self._publisher.topic_path(self._google_project_id, queue_name)
+        topic_path = self.topic_path(queue_name)
         try:
             self._publisher.create_topic(topic_path)
         except Exception:
             log.warn('Unable to create topic.')
 
-        subscription_path = self._subscriber.subscription_path(self._google_project_id, queue_name)
+        subscription_path = self.subscription_path(queue_name)
         try:
             self._subscriber.create_subscription(subscription_path, topic_path)
         except Exception:
@@ -111,13 +119,13 @@ class Channel(virtual.Channel):
     def queue_bind(self, queue, exchange, routing_key, **kwargs):
         super(Channel, self).queue_bind(queue, exchange, routing_key, **kwargs)
 
-        topic_path = self._publisher.topic_path(self._google_project_id, routing_key)
+        topic_path = self.topic_path(routing_key)
         try:
             self._publisher.create_topic(topic_path)
         except Exception:
             log.warn('Unable to create topic.')
 
-        subscription_path = self._subscriber.subscription_path(self._google_project_id, queue)
+        subscription_path = self.subscription_path(queue)
         try:
             self._subscriber.create_subscription(subscription_path, topic_path)
         except Exception:
@@ -141,7 +149,7 @@ class Channel(virtual.Channel):
                 q.put(message)
 
             self._queues[queue_name] = q
-            subscription_path = self._subscriber.subscription_path(self._google_project_id, queue_name)
+            subscription_path = self.subscription_path(queue_name)
             self._subscriber.subscribe(subscription_path, callback=_get_callback)
 
         try:
@@ -161,7 +169,7 @@ class Channel(virtual.Channel):
 
     def _put(self, routing_key, message, **kwargs):
         payload = json.dumps(message).encode('utf-8')
-        topic_path = self._publisher.topic_path(self._google_project_id, routing_key)
+        topic_path = self.topic_path(routing_key)
         self._publisher.publish(topic_path, payload)
 
     def basic_ack(self, delivery_tag, multiple=False):
@@ -187,7 +195,7 @@ class Channel(virtual.Channel):
                 if fnmatch.fnmatch(topic.name, routing_key):
                     yield topic.name
         else:
-            topic_path = self._publisher.topic_path(self._google_project_id, routing_key)
+            topic_path = self.topic_path(routing_key)
             try:
                 self._publisher.get_topic(topic_path)
             except exceptions.GoogleAPICallError:
@@ -197,7 +205,7 @@ class Channel(virtual.Channel):
     '''
 
     def _purge(self, queue_name):
-        subscription_path = self._subscriber.subscription_path(self._google_project_id, queue_name)
+        subscription_path = self.subscription_path(queue_name)
         subscription = self._subscriber.get_subscription(subscription_path)
         topic_path = subscription.topic
 
