@@ -106,14 +106,18 @@ class Channel(virtual.Channel):
         topic_path = self.topic_path(queue_name)
         try:
             self._publisher.create_topic(topic_path)
-        except Exception:
-            log.warn('Unable to create topic.')
+        except exceptions.AlreadyExists:
+            pass
+        except:
+            log.warn('Unable to create topic.', exc_info=True)
 
         subscription_path = self.subscription_path(queue_name)
         try:
             self._subscriber.create_subscription(subscription_path, topic_path)
-        except Exception:
-            log.warn('Unable to create subscription.')
+        except exceptions.AlreadyExists:
+            pass
+        except:
+            log.warn('Unable to create subscription.', exc_info=True)
 
     '''
     def queue_bind(self, queue, exchange, routing_key, **kwargs):
